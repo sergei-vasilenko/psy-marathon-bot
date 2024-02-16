@@ -27,9 +27,14 @@ class Bot extends Application {
     getConfigKey
   ) {
     super(roleModel);
-    this.#state = new TelegtamApi(getConfigKey("TOKEN"), {
-      polling: true,
+
+    const token = getConfigKey("TOKEN");
+    const url = getConfigKey("VERCEL_URL");
+
+    this.#state = new TelegtamApi(token, {
+      polling: false,
     });
+    this.#state.setWebHook(`https://${url}/${token}`);
     this.#ee = new EventEmitter(
       [
         "command",
