@@ -36,11 +36,7 @@ class Bot extends Application {
       polling: false,
       webHook: { port },
     });
-    console.log(`https://${url}/${token}`, {
-      token,
-      url,
-      port,
-    });
+
     this.#bot.setWebHook(`https://${url}/${token}`);
     this.#ee = new EventEmitter(
       [
@@ -88,16 +84,12 @@ class Bot extends Application {
             this.#bot.setMyCommands(commands);
             break;
           case "admin":
-            this.#getConfigKey("ADMIN_IDS")
-              ?.split(",")
-              .forEach((adminId) => {
-                this.#bot.setMyCommands(commands, {
-                  scope: {
-                    type: "chat",
-                    chat_id: adminId,
-                  },
-                });
-              });
+            this.#bot.setMyCommands(commands, {
+              scope: {
+                type: "chat",
+                chat_id: this.#getConfigKey("ADMIN_ID"),
+              },
+            });
         }
       });
     return this;
@@ -235,33 +227,30 @@ class Bot extends Application {
     const { first_name, last_name } = msg.from;
     const text = `Участница ${first_name} ${last_name} попросила о помощи`;
 
-    const adminIds = this.#getConfigKey("ADMIN_IDS").split(",") || [];
-    for (const adminId of adminIds) {
-      await this.send("text", adminId, text, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: `Дополнительная информация`,
-                callback_data: `user_info ${chatId}`,
-              },
-            ],
-            [
-              {
-                text: `Ответить от своего имени`,
-                url: `tg://user?id=${chatId}`,
-              },
-            ],
-            [
-              {
-                text: `Ответить от имени бота`,
-                switch_inline_query_current_chat: `message_to_user ${chatId} `,
-              },
-            ],
+    await this.send("text", this.#getConfigKey("ADMIN_ID"), text, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: `Дополнительная информация`,
+              callback_data: `user_info ${chatId}`,
+            },
           ],
-        },
-      });
-    }
+          [
+            {
+              text: `Ответить от своего имени`,
+              url: `tg://user?id=${chatId}`,
+            },
+          ],
+          [
+            {
+              text: `Ответить от имени бота`,
+              switch_inline_query_current_chat: `message_to_user ${chatId} `,
+            },
+          ],
+        ],
+      },
+    });
   }
 
   async sendHelpMessage(args) {
