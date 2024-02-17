@@ -13,7 +13,7 @@ import {
 } from "../utils.js";
 
 class Bot extends Application {
-  #state = null;
+  #bot = null;
   #getConfigKey = null;
   #ee = null;
   #parser = null;
@@ -30,11 +30,18 @@ class Bot extends Application {
 
     const token = getConfigKey("TOKEN");
     const url = getConfigKey("VERCEL_URL");
+    const port = getConfigKey("PORT") || 3000;
 
-    this.#state = new TelegtamApi(token, {
+    this.#bot = new TelegtamApi(token, {
       polling: false,
+      webHook: { port },
     });
-    this.#state.setWebHook(`https://${url}/${token}`);
+    console.log(`https://${url}/${token}`, {
+      token,
+      url,
+      port,
+    });
+    this.#bot.setWebHook(`https://${url}/${token}`);
     this.#ee = new EventEmitter(
       [
         "command",
@@ -78,13 +85,13 @@ class Bot extends Application {
 
         switch (role) {
           case "user":
-            this.#state.setMyCommands(commands);
+            this.#bot.setMyCommands(commands);
             break;
           case "admin":
             this.#getConfigKey("ADMIN_IDS")
               ?.split(",")
               .forEach((adminId) => {
-                this.#state.setMyCommands(commands, {
+                this.#bot.setMyCommands(commands, {
                   scope: {
                     type: "chat",
                     chat_id: adminId,
@@ -97,7 +104,7 @@ class Bot extends Application {
   }
 
   #initListeners() {
-    this.#state.on("message", (msg) => {
+    this.#bot.on("message", (msg) => {
       if (msg.is_bot) {
         return;
       }
@@ -121,14 +128,14 @@ class Bot extends Application {
             }),
       });
     });
-    this.#state.on("callback_query", (msg) => {
+    this.#bot.on("callback_query", (msg) => {
       if (msg.is_bot) {
         return;
       }
       this.#ee.emit("user_activity", { msg });
       this.#ee.emit("keyboard", { args: this.getArgs(msg.data), msg });
     });
-    this.#state.on("polling_error", (err) => {
+    this.#bot.on("polling_error", (err) => {
       this.#ee.emit("polling_error", { err });
     });
   }
@@ -185,7 +192,7 @@ class Bot extends Application {
   }
 
   get origin() {
-    return this.#state;
+    return this.#bot;
   }
 
   on(eventname, callback) {
@@ -200,7 +207,7 @@ class Bot extends Application {
     if (!data) {
       return { success: false, message: "'data' field has invalid value" };
     }
-    const bot = this.#state;
+    const bot = this.#bot;
     const methods = {
       text: async (chatId, msg, options) => {
         await bot.sendChatAction(chatId, "typing");
