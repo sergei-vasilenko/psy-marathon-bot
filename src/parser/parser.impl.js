@@ -1,5 +1,5 @@
 import lecsicalRules from "./lecsical.rules.js";
-import { signatures } from "../bot/commands.js";
+import { signatures } from "../constants/commands.js";
 
 class LineParser {
   #lecsicalRules = null;

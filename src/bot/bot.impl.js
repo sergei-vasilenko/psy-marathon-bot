@@ -1,10 +1,9 @@
-import TelegtamApi from "node-telegram-bot-api";
-import Application from "../application/application.impl.js";
+import TelegramApi from "node-telegram-bot-api";
 import EventEmitter from "../eventemitter/eventemitter.impl.js";
 import parser from "../parser/parser.impl.js";
-import roleModel from "../application/rolemodel.js";
-import { commands } from "./commands.js";
-import { textCmdAliases } from "../scenes/scenario.js";
+import { commands } from "../constants/commands.js";
+import { textCmdAliases } from "../constants/text.commands.js";
+import { admins } from "../constants/user.groups.js";
 import {
   getChatId,
   getConfigKey,
@@ -12,32 +11,22 @@ import {
   millisecondsToTime,
 } from "../utils.js";
 
-class Bot extends Application {
+class Bot {
   #bot = null;
-  #getConfigKey = null;
   #ee = null;
   #parser = null;
 
-  constructor(
-    TelegtamApi,
-    EventEmitter,
-    parser,
-    roleModel,
-    commands,
-    getConfigKey
-  ) {
-    super(roleModel);
+  constructor(TelegramApi, EventEmitter, parser, commands, getConfigKey) {
+    const { TOKEN, URL, PORT } = getConfigKey(["TOKEN", "URL", "PORT"]);
 
-    const token = getConfigKey("TOKEN");
-    const url = getConfigKey("VERCEL_URL");
-    const port = getConfigKey("PORT") || 3000;
-
-    this.#bot = new TelegtamApi(token, {
+    this.#bot = new TelegramApi(TOKEN, {
       polling: false,
-      webHook: { port },
+      webHook: { PORT },
     });
 
-    this.#bot.setWebHook(`https://${url}/${token}`);
+    this.#bot.setWebhook(`https://${URL}/${TOKEN}`);
+
+    console.log("Webhook info:", this.#bot.getWebhookInfo());
     this.#ee = new EventEmitter(
       [
         "command",
@@ -45,13 +34,11 @@ class Bot extends Application {
         "frombot",
         "message",
         "keyboard",
-        "polling_error",
         "user_activity",
       ],
       "bot"
     );
     this.#parser = parser;
-    this.#getConfigKey = getConfigKey;
     this.#initCommands(commands);
     this.#initListeners();
   }
@@ -84,12 +71,15 @@ class Bot extends Application {
             this.#bot.setMyCommands(commands);
             break;
           case "admin":
-            this.#bot.setMyCommands(commands, {
-              scope: {
-                type: "chat",
-                chat_id: this.#getConfigKey("ADMIN_ID"),
-              },
-            });
+            for (const adminId of admins) {
+              this.#bot.setMyCommands(commands, {
+                scope: {
+                  type: "chat",
+                  chat_id: adminId,
+                },
+              });
+            }
+            break;
         }
       });
     return this;
@@ -126,9 +116,6 @@ class Bot extends Application {
       }
       this.#ee.emit("user_activity", { msg });
       this.#ee.emit("keyboard", { args: this.getArgs(msg.data), msg });
-    });
-    this.#bot.on("polling_error", (err) => {
-      this.#ee.emit("polling_error", { err });
     });
   }
 
@@ -227,30 +214,32 @@ class Bot extends Application {
     const { first_name, last_name } = msg.from;
     const text = `Участница ${first_name} ${last_name} попросила о помощи`;
 
-    await this.send("text", this.#getConfigKey("ADMIN_ID"), text, {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: `Дополнительная информация`,
-              callback_data: `user_info ${chatId}`,
-            },
+    for (const adminId of admins) {
+      await this.send("text", adminId, text, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: `Дополнительная информация`,
+                callback_data: `user_info ${chatId}`,
+              },
+            ],
+            [
+              {
+                text: `Ответить от своего имени`,
+                url: `tg://user?id=${chatId}`,
+              },
+            ],
+            [
+              {
+                text: `Ответить от имени бота`,
+                switch_inline_query_current_chat: `message_to_user ${chatId} `,
+              },
+            ],
           ],
-          [
-            {
-              text: `Ответить от своего имени`,
-              url: `tg://user?id=${chatId}`,
-            },
-          ],
-          [
-            {
-              text: `Ответить от имени бота`,
-              switch_inline_query_current_chat: `message_to_user ${chatId} `,
-            },
-          ],
-        ],
-      },
-    });
+        },
+      });
+    }
   }
 
   async sendHelpMessage(args) {
@@ -360,13 +349,6 @@ class Bot extends Application {
   }
 }
 
-const bot = new Bot(
-  TelegtamApi,
-  EventEmitter,
-  parser,
-  roleModel,
-  commands,
-  getConfigKey
-);
+const bot = new Bot(TelegramApi, EventEmitter, parser, commands, getConfigKey);
 
 export default bot;

@@ -1,11 +1,12 @@
-import { config } from "dotenv";
-
 export const getEnvKey = (key) => {
-  const { error, parsed } = config();
-  if (error || !parsed) {
-    return new Error("[ConfigService]: Check your file .env");
+  if (Array.isArray(key)) {
+    return key.reduce((result, keyName) => {
+      result[keyName] =
+        process.env[keyName] || new Error("[ConfigService]: No specified key");
+      return result;
+    }, {});
   }
-  const res = parsed[key];
+  const res = process.env[key];
   if (!res) {
     return new Error("[ConfigService]: No specified key");
   }
@@ -51,4 +52,14 @@ export const millisecondsToTime = (ms) => {
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   return { hours, minutes };
+};
+
+export const callHandlerByKey = (
+  cases = [],
+  defaultHandler = () => undefined
+) => {
+  const state = new Map(cases);
+  return async (cmdName, ...args) => {
+    state.has(cmdName) ? await state.get(cmdName)(...args) : defaultHandler();
+  };
 };

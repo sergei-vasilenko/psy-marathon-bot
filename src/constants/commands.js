@@ -1,20 +1,20 @@
-import bot from "./bot.impl.js";
+import bot from "../bot/bot.impl.js";
 import appState from "../mediator/mediator.impl.js";
 import actionsSignature from "./actions.signature.js";
-import { pluralizeWord } from "../utils.js";
+import { pluralizeWord, callHandlerByKey } from "../utils.js";
 
 export const commands = [
   {
     command: "/logs",
     description: "Получить логи",
     role: "support",
-    handler: async ({ chat_id }) => {
-      await bot.send(
-        "text",
-        chat_id,
-        "We are looking forward to the implementation"
-      );
-    },
+    // handler: async ({ chat_id }) => {
+    //   await bot.send(
+    //     "text",
+    //     chat_id,
+    //     "We are looking forward to the implementation"
+    //   );
+    // },
   },
   {
     command: "/userscount",
@@ -79,15 +79,9 @@ export const commands = [
   },
 ];
 
-const getCommandHandlers = (commands = []) => {
-  const cmdsMap = commands.map(({ command, handler }) => [command, handler]);
-  const state = new Map(cmdsMap);
-  return async (cmdName, ...args) => {
-    state.has(cmdName) ? await state.get(cmdName)(...args) : undefined;
-  };
-};
-
-export const commandHandlers = getCommandHandlers(commands);
+export const commandHandlers = callHandlerByKey(
+  commands.map(({ command, handler }) => [command, handler])
+);
 
 export const signatures = commands.reduce(
   (result, cmd) => {
