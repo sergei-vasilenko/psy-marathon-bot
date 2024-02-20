@@ -1,60 +1,54 @@
-import mongoose from "mongoose";
-
-const Schema = mongoose.Schema;
-
-const userSchema = new Schema({
+const userSchema = {
   first_name: {
-    type: String,
+    type: "string",
     required: true,
   },
   last_name: {
-    type: String,
+    type: "string",
     required: true,
   },
   username: {
-    type: String,
+    type: "string",
     required: true,
   },
   chat_id: {
-    type: Number,
+    type: "number",
     required: true,
   },
   scene: {
-    type: Number,
+    type: "number",
     default: 0,
   },
   step: {
-    type: Number,
+    type: "number",
     default: 0,
   },
   is_active: {
-    type: Boolean,
+    type: "boolean",
     default: true,
   },
   is_completed: {
-    type: Boolean,
+    type: "boolean",
     default: false,
   },
   course_beginnings: {
-    type: Number,
+    type: "number",
     default: 0,
   },
   date_of_joining: {
-    type: String,
+    type: "string",
   },
   last_activity_time: {
-    type: Number,
+    type: "number",
   },
   scene_message: {
-    type: [{ scene: Number, text: String }],
+    type: [{ scene: "number", text: "string" }],
     default: [],
   },
   scene_duration: {
-    type: [{ scene: Number, since: Number, until: Number }],
+    type: [{ scene: "number", since: "number", until: "number" }],
     default: [],
   },
-});
+};
 
-const User = mongoose.model("User", userSchema);
-
-export default User;
+export default userSchema;

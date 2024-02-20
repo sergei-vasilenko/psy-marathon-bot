@@ -1,7 +1,7 @@
 import appState from "./mediator/mediator.impl.js";
 import bot from "./bot/bot.impl.js";
 import scheduler from "./scheduler/scheduler.impl.js";
-import { commandHandlers } from "./bot/commands.js";
+import { commandHandlers } from "./constants/commands.js";
 import { getChatId, callIfAvailable } from "./utils.js";
 
 (async () => {

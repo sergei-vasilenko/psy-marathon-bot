@@ -1,11 +1,9 @@
-import mongoose from "mongoose";
-import User from "./models/user.js";
-import { getConfigKey, getChatId, match } from "../utils.js";
+import db from "../database/db.impl.js";
+import { getChatId, match } from "../utils.js";
 
-mongoose
-  .connect(getConfigKey("DB_URL"))
-  .then(() => console.log("MongoDB connected!"))
-  .catch((err) => console.error("MongoDB Error:", err));
+db.connect()
+  .then(() => console.log("DB connected!"))
+  .catch((err) => console.error("DB Error:", err));
 
 class AppStore {
   #db = null;
@@ -29,9 +27,7 @@ class AppStore {
   async restore() {
     const requiredFields = ["chat_id", "scene", "step", "is_active"];
     await this.#db
-      .find({}, requiredFields.join(" "))
-      .lean()
-      .exec()
+      .getAll({}, requiredFields)
       .then((users) => {
         users.forEach(({ chat_id, scene, step, is_active }) =>
           this.#localState.set(chat_id, {
@@ -48,7 +44,7 @@ class AppStore {
       });
   }
 
-  async initUser(data) {
+  initUser(data) {
     const userData = this.#prepareMsgForUserModel(data);
     this.#localState.set(userData.chat_id, {
       is_active: true,
@@ -56,9 +52,8 @@ class AppStore {
       step: 0,
     });
     try {
-      const hasUser = await User.findOne({ chat_id: userData.chat_id });
-      if (!hasUser) {
-        await new this.#db(userData).save();
+      if (!this.#db.has(userData.chat_id)) {
+        this.#db.add(userData);
       }
       return true;
     } catch (err) {
@@ -86,17 +81,17 @@ class AppStore {
     return { scene, step };
   }
 
-  async getUserTemplateList(select) {
-    return await this.#db.find({}, select).lean().exec();
+  async getUserTemplateList(fields) {
+    return await this.#db.getAll({}, fields);
   }
 
   async getUserChatIdsList() {
-    return await this.getUserTemplateList("chat_id");
+    return await this.getUserTemplateList(["chat_id"]);
   }
 
   async getUsersList() {
-    const select = "chat_id first_name last_name username";
-    return await this.getUserTemplateList(select);
+    const fields = ["chat_id", "first_name", "last_name", "username"];
+    return await this.getUserTemplateList(fields);
   }
 
   async setUserProgressById(id, { scene, step }) {
@@ -120,9 +115,9 @@ class AppStore {
     return await this.updateUser(id, { $inc: { course_beginnings: 1 } });
   }
 
-  async saveSceneMessage(id, message) {
+  saveSceneMessage(id, message) {
     try {
-      const user = await this.#db.findOne({ chat_id: id });
+      const user = this.#db.get(id);
       user.scene_message.push({
         datestamp: Date.now(),
         scene: user.scene,
@@ -136,9 +131,9 @@ class AppStore {
     }
   }
 
-  async saveSceneDuration(id) {
+  saveSceneDuration(id) {
     try {
-      const user = await this.#db.findOne({ chat_id: id });
+      const user = this.#db.get(id);
 
       const duration = user.scene_duration.pop();
       if (duration) {
@@ -159,23 +154,22 @@ class AppStore {
     }
   }
 
-  async getUserDetails(id) {
-    return await this.#db.find({ chat_id: id }).lean().exec();
+  getUserDetails(id) {
+    return this.#db.get(id);
   }
 
-  async getUsersCount(type) {
+  getUsersCount(type) {
     const filter = match(
       type,
       {},
       ["active", { is_active: true }],
       ["completed", { is_completed: true }]
     );
-    const res = await this.#db.countDocuments(filter);
-    console.log({ res, filter });
+    const res = this.#db.count(filter);
     return res;
   }
 }
 
-const appStore = new AppStore(User);
+const appStore = new AppStore(db);
 
 export default appStore;

@@ -24,9 +24,9 @@ class Bot {
       webHook: { PORT },
     });
 
-    this.#bot.setWebhook(`https://${URL}/${TOKEN}`);
+    this.#bot.setWebHook(`https://${URL}/${TOKEN}`);
 
-    console.log("Webhook info:", this.#bot.getWebhookInfo());
+    console.log("Webhook info:", this.#bot.getWebHookInfo());
     this.#ee = new EventEmitter(
       [
         "command",

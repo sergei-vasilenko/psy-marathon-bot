@@ -6,8 +6,9 @@ import { routeHandlers } from "./router.js";
 const PORT = getConfigKey("PORT");
 
 const options = {
-  key: fs.readFileSync("../certificate/key.pem"),
-  cert: fs.readFileSync("../certificate/cert.pem"),
+  key: fs.readFileSync("./certificate/key.pem"),
+  cert: fs.readFileSync("./certificate/cert.pem"),
+  passphrase: getConfigKey("CERT_PHRASE"),
 };
 
 const requestHandler = (req, res) => {
