@@ -20,7 +20,7 @@ const routes = {
       res.end();
     });
   },
-  admin: () => {},
+  "/admin": () => {},
 };
 
 export const routeHandlers = callHandlerByKey(

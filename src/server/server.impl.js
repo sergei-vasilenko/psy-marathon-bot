@@ -11,11 +11,14 @@ const options = {
   passphrase: getConfigKey("CERT_PHRASE"),
 };
 
+const TOKEN = getConfigKey("TOKEN");
+
 const requestHandler = (req, res) => {
   const { url } = req;
-  routeHandlers(url, req, res);
+  console.log({ url, path: `/${TOKEN}` });
+  // routeHandlers(url, req, res);
 };
 
 https.createServer(options, requestHandler).listen(PORT, () => {
-  console.log("Server is running");
+  console.log("Server is running", { PORT, TOKEN });
 });

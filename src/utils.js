@@ -1,20 +1,19 @@
-import { config } from "dotenv";
+// import { config } from "dotenv";
 
 export const getEnvKey = (key) => {
-  const { error, parsed } = config();
-  if (error || !parsed) {
-    return new Error("[ConfigService]: Check your file .env");
-  }
+  // const { error, parsed } = config();
+  // if (error || !parsed) {
+  //   return new Error("[ConfigService]: Check your file .env");
+  // }
 
   if (Array.isArray(key)) {
     return key.reduce((result, keyName) => {
       result[keyName] =
-        parsed[keyName] || new Error("[ConfigService]: No specified key");
+        process.env[keyName] || new Error("[ConfigService]: No specified key");
       return result;
     }, {});
   }
-  const res = parsed[key];
-  console.log({ key, parsed });
+  const res = process.env[key];
   if (!res) {
     return new Error("[ConfigService]: No specified key");
   }

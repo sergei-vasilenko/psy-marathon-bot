@@ -32,7 +32,7 @@ class DB {
         return;
       }
 
-      return files.filter((file) => path.extname(file) === ".json");
+      return files?.filter((file) => path.extname(file) === ".json");
     });
   }
 

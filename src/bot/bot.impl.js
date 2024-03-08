@@ -17,16 +17,14 @@ class Bot {
   #parser = null;
 
   constructor(TelegramApi, EventEmitter, parser, commands, getConfigKey) {
-    const { TOKEN, URL, PORT } = getConfigKey(["TOKEN", "URL", "PORT"]);
+    const TOKEN = getConfigKey("TOKEN");
 
     this.#bot = new TelegramApi(TOKEN, {
       polling: false,
-      webHook: { PORT },
     });
 
-    this.#bot.setWebHook(`https://${URL}/${TOKEN}`);
+    this.#bot.setWebHook(this.url);
 
-    console.log("Webhook info:", this.#bot.getWebHookInfo());
     this.#ee = new EventEmitter(
       [
         "command",
@@ -41,6 +39,11 @@ class Bot {
     this.#parser = parser;
     this.#initCommands(commands);
     this.#initListeners();
+  }
+
+  get url() {
+    const { TOKEN, URL } = getConfigKey(["TOKEN", "URL"]);
+    return `https://api.telegram.org/bot${TOKEN}/setWebhook?url=${URL}`;
   }
 
   #getMedia(object) {
