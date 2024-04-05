@@ -1,24 +1,39 @@
-import https from "https";
-import fs from "fs";
-import { getConfigKey } from "../utils.js";
-import { routeHandlers } from "./router.js";
+import express from "express";
+import bodyParser from "body-parser";
+import bot from "../bot/bot.impl.js";
+import { getEnvKey, paths } from "../utils.js";
+import adminPathHandler from "../admin/adminPathHandler.js";
+import authEndpoint from "./api/groups/auth.endpoint.js";
+import usersEndpoint from "./api/groups/users.endpoint.js";
+import settingsEndpoint from "./api/groups/settings.endpoint.js";
+import filesEndpoint from "./api/groups/files.endpoint.js";
 
-const PORT = getConfigKey("PORT");
+const { join, __root } = paths(import.meta.url);
+const server = express();
+const { TOKEN, PORT } = getEnvKey(["TOKEN", "PORT"]);
 
-const options = {
-  key: fs.readFileSync("./certificate/key.pem"),
-  cert: fs.readFileSync("./certificate/cert.pem"),
-  passphrase: getConfigKey("CERT_PHRASE"),
-};
+const publicPath = express.static(join(__root, "public"));
+server.use(bodyParser.json());
 
-const TOKEN = getConfigKey("TOKEN");
+server.use("/admin", publicPath);
+server.use(authEndpoint.prefix, authEndpoint.router);
+server.use(usersEndpoint.prefix, usersEndpoint.router);
+server.use(settingsEndpoint.prefix, settingsEndpoint.router);
+server.use(filesEndpoint.prefix, filesEndpoint.router);
+server.get("/admin/*", adminPathHandler);
 
-const requestHandler = (req, res) => {
-  const { url } = req;
-  console.log({ url, path: `/${TOKEN}` });
-  // routeHandlers(url, req, res);
-};
-
-https.createServer(options, requestHandler).listen(PORT, () => {
-  console.log("Server is running", { PORT, TOKEN });
+server.post(`/bot${TOKEN}`, (req, res) => {
+  const update = req.body;
+  bot.processUpdate(update);
+  res.send();
 });
+
+server.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
+});
+
+// const options = {
+//   key: fs.readFileSync("./certificate/key.pem"),
+//   cert: fs.readFileSync("./certificate/cert.pem"),
+//   passphrase: getConfigKey("CERT_PHRASE"),
+// };

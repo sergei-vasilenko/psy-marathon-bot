@@ -8,7 +8,10 @@ class BotMediator {
   #ee = null;
 
   constructor(EventEmitter, { dbStore, sceneManager }) {
-    this.#ee = new EventEmitter(["next_scene", "next_step"], "mediator");
+    this.#ee = new EventEmitter(
+      ["next_scene", "next_step", "undefined_behavior"],
+      "mediator"
+    );
     this.#dbStore = dbStore;
     this.#sceneManager = sceneManager;
   }
@@ -19,6 +22,8 @@ class BotMediator {
         return "next_scene";
       case prevValue.step < currentValue.step:
         return "next_step";
+      default:
+        return "undefined_behavior";
     }
   }
 
@@ -27,7 +32,7 @@ class BotMediator {
   }
 
   async start(msg) {
-    await this.#dbStore.initUser(msg);
+    await this.#dbStore.createUser(msg);
     return this.#sceneManager.getFirstStep();
   }
 
@@ -48,9 +53,6 @@ class BotMediator {
       chat_id: chatId,
     });
     await this.#dbStore.setUserProgressById(chatId, position);
-    if (!data) {
-      await this.#dbStore.markUserAsCompleted(chatId);
-    }
     return data;
   }
 
@@ -82,8 +84,8 @@ class BotMediator {
     await this.#dbStore.markUserAsCompleted(chatId);
   }
 
-  async saveSceneDuration(chatId) {
-    await this.#dbStore.saveSceneDuration(chatId);
+  saveSceneDuration(chatId) {
+    this.#dbStore.saveSceneDuration(chatId);
   }
 
   async saveSceneMessage(chatId, message) {

@@ -2,7 +2,6 @@ import TelegramApi from "node-telegram-bot-api";
 import EventEmitter from "../eventemitter/eventemitter.impl.js";
 import parser from "../parser/parser.impl.js";
 import { commands } from "../constants/commands.js";
-import { textCmdAliases } from "../constants/text.commands.js";
 import { admins } from "../constants/user.groups.js";
 import {
   getChatId,
@@ -15,13 +14,12 @@ class Bot {
   #bot = null;
   #ee = null;
   #parser = null;
+  #textCmdAliases = new Map();
 
   constructor(TelegramApi, EventEmitter, parser, commands, getConfigKey) {
     const TOKEN = getConfigKey("TOKEN");
 
-    this.#bot = new TelegramApi(TOKEN, {
-      polling: false,
-    });
+    this.#bot = new TelegramApi(TOKEN);
 
     this.#bot.setWebHook(this.url);
 
@@ -43,7 +41,7 @@ class Bot {
 
   get url() {
     const { TOKEN, URL } = getConfigKey(["TOKEN", "URL"]);
-    return `https://api.telegram.org/bot${TOKEN}/setWebhook?url=${URL}`;
+    return `${URL}/bot${TOKEN}`;
   }
 
   #getMedia(object) {
@@ -95,18 +93,18 @@ class Bot {
       }
       const text = msg.text;
       const messageType = match(
-        text,
         "message",
         [(text) => text?.startsWith("/"), "command"],
         [(text) => text?.startsWith("@"), "frombot"],
-        [(text) => textCmdAliases.has(text), "text_command"]
-      );
+        [(text) => this.#textCmdAliases.has(text), "text_command"]
+      )(text);
+
       this.#ee.emit("user_activity", { msg });
       this.#ee.emit(messageType, {
         msg,
         ...(messageType !== "message" && messageType === "text_command"
           ? {
-              action_name: textCmdAliases.get(text),
+              action_name: this.#textCmdAliases.get(text),
             }
           : {
               args: this.getArgs(text),
@@ -181,8 +179,20 @@ class Bot {
     this.#ee.subscribe(eventname, callback);
   }
 
+  setTextCmdAliases(aliases) {
+    const mappedAliases = aliases.map((alias) => [
+      alias.name,
+      alias.action.value,
+    ]);
+    this.#textCmdAliases = new Map(mappedAliases);
+  }
+
   getArgs(cmd) {
     return this.#parser.getArgs(cmd);
+  }
+
+  processUpdate(data) {
+    this.#bot.processUpdate(data);
   }
 
   async send(type, chatId, data, options = {}) {
@@ -251,19 +261,21 @@ class Bot {
   }
 
   async sendStepMessage(id, data) {
-    const message = Object.entries(data?.message || {}).filter(
-      ([, value]) => !!value
-    );
-    const [lastField] = message.at(-1);
+    const message = data?.message.filter((elem) => elem.data);
+    if (!message || !message.length) return;
+
     const validFields = ["text", "image", "video"];
     const options = {};
-    for (const [field, value] of message) {
-      if (!validFields.includes(field)) {
-        console.warn(`Field ${field} is not valid.`);
+
+    let count = 0;
+    for (const part of message) {
+      if (!validFields.includes(part.type)) {
+        console.warn(`Field ${part.type} is not valid.`);
         continue;
       }
 
-      if (field === lastField) {
+      const isLast = ++count === message.length;
+      if (isLast) {
         options.reply_markup = data.buttons
           ? {
               keyboard: data.buttons,
@@ -274,7 +286,7 @@ class Bot {
           : { remove_keyboard: true };
       }
 
-      await this.send(field, id, value, options);
+      await this.send(part.type, id, part.data, options);
     }
   }
 
@@ -282,9 +294,9 @@ class Bot {
     let message = ``;
     usersList.forEach((user) => {
       if (user) {
-        const { chat_id, first_name, last_name, username } = user;
+        const { _id, first_name, last_name, username } = user;
         message += `\n
-        id: ${chat_id}
+        id: ${_id}
         Имя: ${first_name}
         Фамилия: ${last_name}
         ${username ? "@" + username : ""}\n`;
@@ -300,9 +312,9 @@ class Bot {
   }
 
   async sendUserDetails(chatId, user) {
-    if (!user || !user?.length) return;
+    if (!user) return;
     const {
-      chat_id,
+      _id,
       first_name,
       last_name,
       username,
@@ -314,14 +326,14 @@ class Bot {
       last_activity_time,
       scene_message,
       scene_duration,
-    } = user[0];
+    } = user;
 
     let message = `\n
-    id: ${chat_id}
+    id: ${_id}
     Имя: ${first_name}
     Фамилия: ${last_name}
     ${username ? "@" + username : ""}
-    
+
     Присоединился: ${date_of_joining}
     Текущий шаг: ${scene}
     Статус: ${is_active ? "активен" : "не активен"}
@@ -345,9 +357,9 @@ class Bot {
     await this.send("text", chatId, message);
   }
 
-  async sendNewsLetter(users = [], text) {
-    for (const user of users) {
-      await this.send("text", user.chat_id, text);
+  async sendNewsLetter(userIds = [], text) {
+    for (const userId of userIds) {
+      await this.send("text", userId, text);
     }
   }
 }

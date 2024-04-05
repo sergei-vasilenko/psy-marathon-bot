@@ -29,10 +29,6 @@ class Scheduler {
     return Date.now() >= this.#dataset.at(-1)?._responseTime;
   }
 
-  #calcResponseTime(now, delay) {
-    return delay * this.#times[this.#unit] + now;
-  }
-
   #checkPlans() {
     while (this.hasEvents) {
       if (this.isNextEventComing) {
@@ -52,6 +48,7 @@ class Scheduler {
   setInterval(value = 1, unit) {
     if (this.#interval) {
       clearInterval(this.#interval);
+      this.#interval = null;
     }
     this.#interval = setInterval(() => {
       this.#checkPlans(this);
@@ -61,6 +58,7 @@ class Scheduler {
 
   stop() {
     clearInterval(this.#interval);
+    this.#interval = null;
     return true;
   }
 
@@ -80,7 +78,7 @@ class Scheduler {
       this.#dataset = this.#dataset.filter((reminder) => reminder.id !== id);
     }
     reminders.forEach((reminder) => {
-      const _responseTime = this.#calcResponseTime(now, reminder.delay);
+      const _responseTime = now + reminder.delay;
       this.#dataset.push({ id, reminder, _responseTime });
     });
     this.#dataset.sort((a, b) => b._responseTime - a._responseTime);
@@ -88,6 +86,6 @@ class Scheduler {
   }
 }
 
-const scheduler = new Scheduler("hours");
+const scheduler = new Scheduler();
 
 export default scheduler;

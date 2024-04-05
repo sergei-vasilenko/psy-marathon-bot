@@ -1,11 +1,18 @@
-import appState from "./mediator/mediator.impl.js";
-import bot from "./bot/bot.impl.js";
-import scheduler from "./scheduler/scheduler.impl.js";
-import { commandHandlers } from "./constants/commands.js";
-import { getChatId, callIfAvailable } from "./utils.js";
+import appState from "../mediator/mediator.impl.js";
+import bot from "./bot.impl.js";
+import scheduler from "../scheduler/scheduler.impl.js";
+import dataBase from "../database/db.impl.js";
+import { commandHandlers } from "../constants/commands.js";
+import { getChatId, callIfAvailable } from "../utils.js";
+import { DATA_BASES, SETTINGS_MODELS_ENUM } from "../constants.js";
+
+const settingsDB = dataBase.connect(DATA_BASES.SETTINGS);
 
 (async () => {
   await appState.init();
+
+  const { list: aliases } = await settingsDB.one(SETTINGS_MODELS_ENUM.ALIASES);
+  bot.setTextCmdAliases(aliases);
 
   // обычные сообщения
   bot.on("message", async ({ msg }) => {
@@ -104,18 +111,16 @@ import { getChatId, callIfAvailable } from "./utils.js";
 
   // смена сцены
   appState.on("next_scene", async ({ scene, chat_id }) => {
-    const reminders = appState.getReminders(chat_id);
-    scheduler.plans(chat_id, reminders);
+    scheduler.plans(chat_id, scene.reminders);
     appState.saveSceneDuration(chat_id);
 
-    switch (scene.name) {
-      case "congratulation":
-        scheduler.clean();
-        await appState.markUserAsCompleted(chat_id);
-        break;
-      case "gratitude":
-        scheduler.plans(chat_id, scene.reminders);
-        break;
+    if (scene.is_last) {
+      scheduler.clean();
+      await appState.markUserAsCompleted(chat_id);
     }
+  });
+
+  appState.on("undefined_behavior", ({ scene, chat_id }) => {
+    console.log("undefined_behavior", { scene, chat_id });
   });
 })();

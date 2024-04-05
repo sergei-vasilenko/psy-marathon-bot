@@ -23,14 +23,14 @@ export const commands = [
     signature: "command_name:cmd type:str",
     handler: async ({ args, chat_id }) => {
       const count = await appState.getUsersCount(args.type);
-      const userForm = pluralizeWord(count, [
+      const word = pluralizeWord(count, [
         "участник",
         "участника",
         "участников",
       ]);
 
       const message = {
-        all: `Всего в марафоне участвовало ${count} ${userForm}.`,
+        all: `Всего в марафоне участвовало ${count} ${word}.`,
         active: `Сейчас активных: ${count}.`,
         completed: `Завершивших марафон: ${count}.`,
       }[args.type || "all"];

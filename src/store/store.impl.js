@@ -1,9 +1,6 @@
-import db from "../database/db.impl.js";
+import { DATA_BASES } from "../constants.js";
+import dataBase from "../database/db.impl.js";
 import { getChatId, match } from "../utils.js";
-
-db.connect()
-  .then(() => console.log("DB connected!"))
-  .catch((err) => console.error("DB Error:", err));
 
 class AppStore {
   #db = null;
@@ -15,130 +12,122 @@ class AppStore {
 
   #prepareMsgForUserModel(msg) {
     const { first_name, last_name, username } = msg.from;
-    return {
+    const userData = {
+      _id: getChatId(msg).toString(),
       first_name,
       last_name,
       username,
-      chat_id: getChatId(msg),
+    };
+    return this.#getUserModel(userData);
+  }
+
+  #getUserModel(data) {
+    return {
+      ...data,
+      scene: 0,
+      step: 0,
+      is_active: true,
+      is_completed: false,
+      course_beginnings: 0,
       date_of_joining: Date(),
+      last_activity_time: Date.now(),
+      scene_message: [],
+      scene_duration: [],
     };
   }
 
-  async restore() {
-    const requiredFields = ["chat_id", "scene", "step", "is_active"];
-    await this.#db
-      .getAll({}, requiredFields)
+  restore() {
+    this.#db
+      .getStructElems(["_id", "scene", "step", "is_active"])
       .then((users) => {
-        users.forEach(({ chat_id, scene, step, is_active }) =>
-          this.#localState.set(chat_id, {
+        users.forEach(({ _id, scene, step, is_active }) =>
+          this.#localState.set(_id.toString(), {
             scene,
             step,
             is_active,
           })
         );
-        return true;
-      })
-      .catch((err) => {
-        console.error(err);
-        return false;
       });
   }
 
-  initUser(data) {
+  createUser(data) {
     const userData = this.#prepareMsgForUserModel(data);
-    this.#localState.set(userData.chat_id, {
+    this.#localState.set(userData._id, {
       is_active: true,
       scene: 0,
       step: 0,
     });
-    try {
-      if (!this.#db.has(userData.chat_id)) {
-        this.#db.add(userData);
-      }
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
+
+    this.#db.create(userData);
   }
 
-  async updateUser(id, action) {
-    try {
-      await this.#db.updateOne({ chat_id: id }, action);
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
-  }
-
-  getUserById(id) {
-    return this.#localState.get(id);
+  getUserByIdFromLocal(id) {
+    return this.#localState.get(id.toString());
   }
 
   getUserProgressById(id) {
-    const { scene, step } = this.getUserById(id);
+    const { scene, step } = this.getUserByIdFromLocal(id);
     return { scene, step };
   }
 
-  async getUserTemplateList(fields) {
-    return await this.#db.getAll({}, fields);
-  }
-
   async getUserChatIdsList() {
-    return await this.getUserTemplateList(["chat_id"]);
+    const users = await this.#db.getStructElems(["_id"]);
+    return users.map((user) => parseInt(user._id));
   }
 
   async getUsersList() {
-    const fields = ["chat_id", "first_name", "last_name", "username"];
-    return await this.getUserTemplateList(fields);
+    const fields = ["_id", "first_name", "last_name", "username"];
+    return await this.#db.getStructElems(fields);
   }
 
   async setUserProgressById(id, { scene, step }) {
-    const user = this.getUserById(id);
-    user.scene = scene;
-    user.step = step;
-    return await this.updateUser(id, { $set: { scene, step } });
+    const _user = this.getUserByIdFromLocal(id);
+    _user.scene = scene;
+    _user.step = step;
+    await this.#db.update(id, (user) => {
+      user.scene = scene;
+      user.step = step;
+      return user;
+    });
   }
 
   async setLastActivityTime(id) {
-    return await this.updateUser(id, {
-      $set: { last_activity_time: Date.now() },
+    await this.#db.update(id, (user) => {
+      user.last_activity_time = Date.now();
+      return user;
     });
   }
 
   async markUserAsCompleted(id) {
-    return await this.updateUser(id, { $set: { is_completed: true } });
+    await this.#db.update(id, (user) => {
+      user.is_completed = true;
+      return user;
+    });
   }
 
   async markUserAsStartingOver(id) {
-    return await this.updateUser(id, { $inc: { course_beginnings: 1 } });
+    await this.#db.update(id, (user) => {
+      user.course_beginnings += 1;
+      return user;
+    });
   }
 
-  saveSceneMessage(id, message) {
-    try {
-      const user = this.#db.get(id);
+  async saveSceneMessage(id, message) {
+    await this.#db.update(id, (user) => {
       user.scene_message.push({
         datestamp: Date.now(),
         scene: user.scene,
         text: message,
       });
-      user.save();
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
+      return user;
+    });
   }
 
-  saveSceneDuration(id) {
-    try {
-      const user = this.#db.get(id);
-
-      const duration = user.scene_duration.pop();
+  async saveSceneDuration(id) {
+    await this.#db.update(id, (user) => {
+      const duration = user.scene_duration.at(-1);
       if (duration) {
         duration.until = Date.now();
-        user.scene_duration.push(duration);
       }
 
       user.scene_duration.push({
@@ -146,30 +135,26 @@ class AppStore {
         since: Date.now(),
         until: Date.now(),
       });
-      user.save();
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
+      return user;
+    });
   }
 
   getUserDetails(id) {
-    return this.#db.get(id);
+    if (id === undefined) return;
+    return this.#db.one(id);
   }
 
-  getUsersCount(type) {
-    const filter = match(
-      type,
+  async getUsersCount(type) {
+    const selector = match(
       {},
       ["active", { is_active: true }],
       ["completed", { is_completed: true }]
-    );
-    const res = this.#db.count(filter);
-    return res;
+    )(type);
+    const users = await this.#db.filter(selector);
+    return users.length;
   }
 }
 
-const appStore = new AppStore(db);
+const appStore = new AppStore(dataBase.connect(DATA_BASES.USERS));
 
 export default appStore;
