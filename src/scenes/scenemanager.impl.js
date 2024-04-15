@@ -1,14 +1,12 @@
-import { scenario } from "./scenario.js";
-
 class SceneManager {
   #scenario = null;
 
-  constructor(scenario = []) {
-    this.#scenario = scenario;
-  }
-
   #getSceneByName(name) {
     return this.#scenario.find((scene) => scene.name === name);
+  }
+
+  init(scenario = []) {
+    this.#scenario = scenario;
   }
 
   getSceneByIndex(index) {
@@ -53,6 +51,6 @@ class SceneManager {
   }
 }
 
-const scenes = new SceneManager(scenario);
+const scenes = new SceneManager();
 
 export default scenes;

@@ -59,7 +59,7 @@ export const commands = [
   },
   {
     command: "/userdetails",
-    description: "Список участников",
+    description: "Информация об участнике",
     role: "admin",
     signature: "command_name:cmd chat_id:int",
     handler: async ({ args, chat_id }) => {

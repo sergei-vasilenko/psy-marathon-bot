@@ -1,5 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 import bot from "../bot/bot.impl.js";
 import { getEnvKey, paths } from "../utils.js";
 import adminPathHandler from "../admin/adminPathHandler.js";
@@ -13,7 +14,9 @@ const server = express();
 const { TOKEN, PORT } = getEnvKey(["TOKEN", "PORT"]);
 
 const publicPath = express.static(join(__root, "public"));
-server.use(bodyParser.json());
+server.use(cookieParser());
+server.use(bodyParser.json({ limit: "10mb" }));
+server.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 
 server.use("/admin", publicPath);
 server.use(authEndpoint.prefix, authEndpoint.router);

@@ -1,6 +1,6 @@
 <script>
   import MainLayout from "../layouts/MainLayout.svelte";
-  import api from "../../../api/index.js";
+  import api from "../../../api.js";
   import {
     localTime,
     fullname,

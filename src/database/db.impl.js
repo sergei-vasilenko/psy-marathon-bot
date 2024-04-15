@@ -11,7 +11,6 @@ class DBAdapter {
     this.#instance = new PouchDB(`app_storage/${id}`);
     this.#actionAccumulator = new ActionAccumulator();
     this.#actionAccumulator.action((elemId, handler) => {
-      console.log({ elemId });
       this.#instance
         .get(elemId)
         .then((elem) => {
@@ -21,28 +20,22 @@ class DBAdapter {
           console.error(err);
         });
     });
-
-    // this.#instance.on("conflict", function (conflict) {
-    //   const latestDoc = conflict.docs.reduce((prev, current) => {
-    //     return prev._rev > current._rev ? prev : current;
-    //   });
-
-    //   conflict.resolve(latestDoc);
-    // });
   }
 
   has(id) {
     return !!this.#instance.get(id);
   }
 
-  create(data) {
-    return this.#instance.get(data._id).catch((err) => {
+  async create(data) {
+    try {
+      await this.#instance.get(data._id);
+    } catch (err) {
       if (err.status === 404) {
-        this.#instance.put(data);
-      } else {
-        throw err;
+        await this.#instance.put(data);
+        return;
       }
-    });
+      throw err;
+    }
   }
 
   update(id, action) {
@@ -77,9 +70,9 @@ class DBAdapter {
       );
   }
 
-  one(id) {
+  async one(id) {
     if (id === undefined) return;
-    return this.#instance.get(id.toString());
+    return await this.#instance.get(id.toString());
   }
 
   list() {

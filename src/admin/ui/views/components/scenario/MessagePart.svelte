@@ -23,7 +23,7 @@
     display: grid;
     grid-template-columns: 60px 1fr 50px 100px;
     column-gap: 10px;
-    height: 45px;
+    min-height: 45px;
     align-items: center;
   }
 

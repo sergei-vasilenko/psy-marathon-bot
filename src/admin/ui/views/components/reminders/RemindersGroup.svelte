@@ -1,44 +1,61 @@
 <script>
   import Button from "../Button.svelte";
+  import EmptyState from "../EmptyState.svelte";
   import ReminderEditorModal from "../modals/ReminderEditorModal.svelte";
   import ReminderElement from "./ReminderElement.svelte";
-  import remindersWriter from "../../../../lib/remindersWriter";
 
   export let group;
+  export let remove;
+  export let remindersWriter;
 
   const state = { isOpen: false, title: "Создать сообщение" };
   const onCreate = (data) => {
-    remindersWriter.createReminder(group._id, data);
+    remindersWriter.createReminder(group.id, data);
   };
 </script>
 
-<div class="group">
-  <div class="group__title">
-    <span class="group__title--bold">Имя группы:</span>
-    {group.name}
+{#if group}
+  <div class="group">
+    <div class="group__reminder-list">
+      {#if group.reminders.length}
+        {#each group.reminders as reminder (reminder.id)}
+          <ReminderElement {reminder} {remindersWriter} />
+        {/each}
+      {:else}
+        <EmptyState />
+      {/if}
+    </div>
+    <div class="group__actions">
+      <Button theme="add" onClick={() => (state.isOpen = true)}
+        >Добавить сообщение</Button
+      >
+      <Button theme="delete" onClick={() => remove(group.id)}
+        >Удалить группу</Button
+      >
+    </div>
+    <ReminderEditorModal {state} {onCreate} />
   </div>
-  <div class="group__reminder-list">
-    {#each group.reminders as reminder (reminder._id)}
-      <ReminderElement {reminder} />
-    {/each}
-  </div>
-  <div class="group__actions">
-    <Button onClick={() => (state.isOpen = true)}>Создать сообщение</Button>
-  </div>
-  <ReminderEditorModal {state} {onCreate} />
-</div>
+{/if}
 
 <style>
   .group {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    column-gap: 10px;
     margin-bottom: 20px;
   }
 
-  .group__title {
-    font-size: 20px;
-    margin-bottom: 8px;
+  .group__reminder-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    row-gap: 20px;
   }
 
-  .group__title--bold {
-    font-weight: 600;
+  .group__actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    row-gap: 10px;
   }
 </style>

@@ -27,15 +27,16 @@ class KeyboardWriter {
   }
 
   build(validate = (value) => value) {
-    this.#state = this.#state.reduce((result, line) => {
+    const keyboard = this.#state.reduce((result, line) => {
       const filteredLine = line.filter(validate);
       if (filteredLine.length) {
         result.push(filteredLine);
       }
       return result;
     }, []);
-    this.#emit("build");
-    return this.#state;
+    this.#state = [[this.#defaultButton]];
+    this.#cursor = { x: 0, y: 0 };
+    return keyboard;
   }
 
   on(eventname, callback) {
@@ -146,6 +147,11 @@ class KeyboardWriter {
     this.#cursor.x = 0;
     this.#cursor.y = y > 0 ? y - 1 : 0;
     this.#emit("update");
+  }
+
+  reset() {
+    this.#state = [[]];
+    this.#cursor = { y: 0, x: 0 };
   }
 
   get keyboard() {

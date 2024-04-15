@@ -1,13 +1,18 @@
 <script>
+  import api from "../../../../api.js";
   import Button from "../Button.svelte";
   import FormRow from "../FormRow.svelte";
   import ModalBase from "./ModalBase.svelte";
-  import api from "../../../../api/index.js";
   export let state;
   export let onCreate;
 
   const acceptTypes = ["text", "image", "audio", "video"];
-  const msgPart = { type: "text", data: "", filename: "", order: 0 };
+  const msgPart = {
+    type: "text",
+    data: "",
+    order: 0,
+  };
+
   let error = "";
 
   const addFileHandler = (event) => {
@@ -15,8 +20,13 @@
 
     const file = event.target.files?.[0];
     if (file) {
-      msgPart.data = file;
+      msgPart.size = file.size / 1024 / 1024;
       msgPart.filename = file.name;
+      msgPart.data = file;
+      if (msgPart.size > 10) {
+        error =
+          "Размер файла превышает 10мб. Выберете файл допустимого размера.";
+      }
     }
   };
 
@@ -31,25 +41,23 @@
     }
 
     if (type === "text") {
-      onCreate(structuredClone(msgPart));
+      onCreate({ part: structuredClone(msgPart) });
     } else {
+      if (msgPart.size > 10) return;
       const formData = new FormData();
       formData.append("type", type);
       formData.append("data", msgPart.data);
-      // msgPart.data = formData.get("data");
-      // try {
-      //   await api.files.upload(formData);
-      //   const filename = formData.get("data").name;
-      //   msgPart.data = filename;
-      onCreate(structuredClone(msgPart));
-      // } catch (err) {
-      //   console.error(err);
-      // }
+      msgPart.data = msgPart.filename;
+      onCreate({
+        upload: async () => await api.files.upload(formData),
+        part: structuredClone(msgPart),
+      });
     }
     msgPart.type = "text";
     msgPart.data = "";
-    msgPart.filename = "";
     msgPart.order += 1;
+    msgPart.filename = "";
+    msgPart.size = 0;
     state.isOpen = false;
     state.title = "";
   };

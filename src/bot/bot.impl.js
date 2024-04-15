@@ -45,7 +45,7 @@ class Bot {
   }
 
   #getMedia(object) {
-    return `./media/${object}`;
+    return `./public/media/${object}`;
   }
 
   #initCommands(commands = []) {
@@ -276,9 +276,9 @@ class Bot {
 
       const isLast = ++count === message.length;
       if (isLast) {
-        options.reply_markup = data.buttons
+        options.reply_markup = data.keyboard
           ? {
-              keyboard: data.buttons,
+              keyboard: data.keyboard,
               one_time_keyboard: true,
               resize_keyboard: true,
               is_persistent: true,

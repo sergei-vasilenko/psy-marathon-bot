@@ -5,7 +5,7 @@
   import MessageKeyboard from "../MessageKeyboard.svelte";
   import ModalBase from "./ModalBase.svelte";
   import KeyboardWriter from "../../../../lib/keyboardWriter.js";
-  import api from "../../../../api";
+  import api from "../../../../api.js";
 
   export let state;
   export let onCreate;

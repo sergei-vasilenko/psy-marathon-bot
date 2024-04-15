@@ -11,7 +11,7 @@ router.get("/status", (req, res) => {
   res.status(200).json({ is_auth });
 });
 
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { login, password } = req.body;
   const loginErrMessage = login !== LOGIN ? "User not found" : "";
   const passwordErrMessage = password !== PASSWORD ? "Password is wrong" : "";
@@ -25,7 +25,7 @@ router.post("/login", (req, res) => {
     });
     return;
   }
-  sessions.start(req, res);
+  await sessions.start(req, res);
   res.status(200).end();
 });
 

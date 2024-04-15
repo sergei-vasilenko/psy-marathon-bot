@@ -7,15 +7,15 @@ class Sessions {
   #cookieKey = "";
   #lifetime = 0;
 
-  constructor(db, { cookieKey = "auth-id", lifetime = "1m" }) {
+  constructor(db, { cookieKey = "_auth-id", lifetime = "1m" }) {
     this.#db = db;
     this.#cookieKey = cookieKey;
 
     const odds = {
-      min: 60,
-      h: 3600,
-      d: 43200,
-      m: 1296000,
+      min: 60000,
+      h: 3600000,
+      d: 43200000,
+      m: 1296000000,
     };
     const [, value, unit] = lifetime.match(/^(\d+)(\D+)/);
     this.#lifetime = parseInt(value) * (odds[unit] || 0);
@@ -30,7 +30,7 @@ class Sessions {
       .then((sessions) => {
         const currentTime = new Date().getTime();
         sessions.forEach((session) => {
-          if (session._ttl * 1000 < currentTime) {
+          if (session.ttl * 1000 < currentTime) {
             this.#db.remove(session._id, session._rev);
           } else {
             this.#state.add(session._id);
@@ -40,19 +40,14 @@ class Sessions {
   }
 
   extractAuthId(req) {
-    return req.cookies?.[this.#cookieKey];
+    return req.cookies[this.#cookieKey];
   }
 
-  start(req, res) {
+  async start(req, res) {
     const id = Date.now().toString();
-    res.setHeader("Set-Cookie", [
-      `${this.#cookieKey}=${id}; HttpOnly; Max-Age=${
-        this.#lifetime
-      }; Path=/admin`,
-    ]);
-    res.setHeader("Authorization", "yes");
+    res.cookie(this.#cookieKey, id, { httpOnly: true, maxAge: this.#lifetime });
     this.#state.add(id);
-    this.#db.put({ _id: id, _ttl: this.#lifetime });
+    await this.#db.put({ _id: id, ttl: this.#lifetime });
   }
 
   end(req, res) {
@@ -60,31 +55,14 @@ class Sessions {
     if (id) {
       const session = this.#db.get(id);
       this.#db.remove(id, session._rev);
-      res.setHeader("Set-Cookie", [`${this.#cookieKey}=; Max-Age=0; Path=`]);
+      res.clearCookie(this.#cookieKey);
       this.#state.delete(id);
     }
-    res.setHeader("Authorization", "no");
   }
 
   isAuth(req) {
     const id = this.extractAuthId(req);
     return this.#state.has(id);
-  }
-
-  prepareRes(req, res) {
-    const id = this.extractAuthId(req);
-    res.setHeader("Authorization", id || this.#state.has(id) ? "yes" : "no");
-  }
-
-  decorator(fn) {
-    return new Proxy(fn, {
-      apply(_fn, context, args) {
-        if (!this.isAuth(args[0])) return;
-
-        this.prepareRes(...args);
-        return Reflect.apply(...arguments);
-      },
-    });
   }
 }
 

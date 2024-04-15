@@ -54,3 +54,22 @@ export const arraysDeepEqual = (arr1, arr2, verifier) => {
 
   return true;
 };
+
+export const removeFields = (target, predicat) => {
+  if (Array.isArray(target)) {
+    return target.map((elem) => removeFields(elem, predicat));
+  }
+  if (target !== null && typeof target === "object") {
+    const fields = Object.keys(target);
+    const result = {};
+    for (const field of fields) {
+      if (predicat(field)) {
+        delete result[field];
+        continue;
+      }
+      result[field] = removeFields(target[field], predicat);
+    }
+    return result;
+  }
+  return target;
+};

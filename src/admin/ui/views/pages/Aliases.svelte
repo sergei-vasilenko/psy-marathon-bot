@@ -5,7 +5,7 @@
   import Button from "../components/Button.svelte";
   import Select from "../components/Select.svelte";
   import FormRow from "../components/FormRow.svelte";
-  import api from "../../../api";
+  import api from "../../../api.js";
   import { arraysDeepEqual } from "../../../assets/helps.js";
 
   let loadedAliases = [];

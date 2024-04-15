@@ -72,7 +72,7 @@
         <div class="display">
           <Select
             options={buttonTypes}
-            view={([title]) => title}
+            view={(button) => button?.at(0) || "нет данных"}
             on:update={({ detail: [text] }) => {
               controls.updateButton(() => ({ text }));
             }}

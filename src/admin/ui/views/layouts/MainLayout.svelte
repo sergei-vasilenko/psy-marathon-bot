@@ -30,7 +30,8 @@
     display: grid;
     grid-template-columns: 260px 1fr;
     max-width: 100vw;
-    height: 100vh;
+    max-height: 100svh;
+    height: 100%;
   }
 
   .content {

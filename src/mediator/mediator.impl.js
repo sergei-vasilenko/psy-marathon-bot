@@ -27,7 +27,8 @@ class BotMediator {
     }
   }
 
-  async init() {
+  async init(scenario) {
+    this.#sceneManager.init(scenario);
     await this.#dbStore.restore();
   }
 
@@ -39,9 +40,7 @@ class BotMediator {
   isCorrectToNextStep(chatId, data) {
     const currentProgress = this.#dbStore.getUserProgressById(chatId);
     const scene = this.#sceneManager.getStepByIndex(currentProgress);
-    return scene.transitionCondition && data
-      ? scene.transitionCondition(data)
-      : false;
+    return scene.transitionCondition && data && scene.transitionCondition(data);
   }
 
   async nextStep(chatId) {

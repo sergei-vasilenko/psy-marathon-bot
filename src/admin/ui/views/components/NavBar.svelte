@@ -1,24 +1,29 @@
 <script>
-  import { Link } from "svelte-routing";
+  import { Link, useLocation, navigate } from "svelte-routing";
   import { routes } from "../../router.js";
-  import { useLocation } from "svelte-routing";
   import { ADMIN_PATH } from "../../../../constants.js";
+  import { isAuth } from "../../store.js";
 
   const visibleRoutes = routes.filter((route) => !route.isHidden);
-  let currentRoute = "/";
+  let currentPath = "/";
 
   useLocation().subscribe(({ pathname }) => {
-    currentRoute = pathname.replace(ADMIN_PATH, "");
+    currentPath = pathname.replace(ADMIN_PATH, "");
+    if (currentPath !== "/auth" && !$isAuth) {
+      console.log("REDIRECT");
+      navigate(`${ADMIN_PATH}/auth`, { replace: true });
+      console.log("AFTER REDIRECT");
+      return;
+    }
+    const route = routes.find((elem) => elem.path === currentPath);
+    document.title = route ? route.title : "Admin panel";
   });
 </script>
 
 <div class="navbar">
   <ul class="navbar__routes">
     {#each visibleRoutes as route (route.path)}
-      <li
-        class="navbar__routes-item"
-        class:active={currentRoute === route.path}
-      >
+      <li class="navbar__routes-item" class:active={currentPath === route.path}>
         <Link to={route.path.slice(1)}>{route.title}</Link>
       </li>
     {/each}

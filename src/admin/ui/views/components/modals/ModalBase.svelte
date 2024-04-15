@@ -1,6 +1,14 @@
 <script>
   export let state;
   export let width;
+
+  $: {
+    if (state.isOpen) {
+      document.body.style["overflow-y"] = "hidden";
+    } else {
+      document.body.style["overflow-y"] = "auto";
+    }
+  }
 </script>
 
 {#if state.isOpen}

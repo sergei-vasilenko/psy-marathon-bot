@@ -1,18 +1,26 @@
 <script>
+  import { navigate } from "svelte-routing";
+  import { isAuth } from "../../store";
+  import api from "../../../api.js";
+  import { ADMIN_PATH } from "../../../../constants.js";
   const user = { login: "", password: "" };
   let error = { login: "", password: "" };
   $: hasError = error.login || error.password;
 
-  const login = (e) => {
+  const login = async (e) => {
     e.preventDefault();
     try {
-      api.login(user);
+      await api.auth.login(user);
+      isAuth.set(true);
+      navigate(`${ADMIN_PATH}/`);
     } catch (err) {
-      // error = err.message;
-      error = err = {
-        login: "User not found",
-        password: "Password is wrong",
-      };
+      isAuth.set(false);
+      if (err.message.login) {
+        error.login = err.message.login;
+      }
+      if (err.message.password) {
+        error.password = err.message.password;
+      }
     }
   };
 </script>
@@ -58,10 +66,14 @@
     justify-content: center;
     align-items: center;
     flex: 0.6;
+    background: linear-gradient(#000000, #518a97);
+    height: 100%;
+    width: 100%;
   }
 
-  .main-heading {
-    width: 100%;
+  label {
+    font-weight: 600;
+    color: #ffffff;
   }
 
   .auth-form {

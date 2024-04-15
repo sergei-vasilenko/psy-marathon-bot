@@ -5,11 +5,12 @@
   import StepButtonsEditorModal from "../modals/StepButtonsEditorModal.svelte";
   import StepTriggerEditorModal from "../modals/StepTriggerEditorModal.svelte";
   import EmptyState from "../EmptyState.svelte";
-  import scWriter from "../../../../lib/scenarioWriter";
   import Button from "../Button.svelte";
+  import { filesToSend, filesToDelete } from "../../../store.js";
 
   export let step = {};
   export let number;
+  export let writer;
 
   const modals = {
     message: { isOpen: false, title: "" },
@@ -18,7 +19,7 @@
   };
 
   const update = ({ id, order, data }) =>
-    scWriter.updPart(step, id, (part) => {
+    writer.updPart(step, id, (part) => {
       if (order !== undefined) {
         part.order = order;
       }
@@ -28,8 +29,36 @@
       return part;
     });
 
-  const remove = (part) => {
-    scWriter.removePart(part);
+  const removePart = async (part) => {
+    try {
+      filesToDelete.update((files) => [...files, part.filename]);
+      writer.removePart(part);
+      filesToSend.update((files) =>
+        files.filter((file) => file.id !== part.id)
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const removeStep = async () => {
+    try {
+      const deleteFiles = step.message.map(part.filename);
+      filesToDelete.update((files) => [...files, ...deleteFiles]);
+      writer.removeStep(step);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const addMessage = ({ part, upload }) => {
+    writer.addPartToMsg(step, part);
+    if (upload) {
+      filesToSend.update((files) => [
+        ...files,
+        { id: part.id, size: part.size, filename: part.filename, upload },
+      ]);
+    }
   };
 </script>
 
@@ -43,7 +72,7 @@
           {part}
           number={partIdx + 1}
           onUpdate={update}
-          onRemove={remove}
+          onRemove={removePart}
         />
       {/each}
     {:else}
@@ -79,25 +108,24 @@
     >
       {step.transitionTrigger ? "Редактировать триггер" : "Добавить триггер"}
     </Button>
+    <Button theme="delete" onClick={removeStep}>Удалить шаг</Button>
   </div>
 </div>
-<StepMessageEditorModal
-  state={modals.message}
-  onCreate={(msgPart) => scWriter.addPartToMsg(step, msgPart)}
-/>
+<StepMessageEditorModal state={modals.message} onCreate={addMessage} />
 <StepButtonsEditorModal
   state={modals.keyboard}
-  onCreate={(keyboard) => scWriter.addKeyboardToMsg(step, keyboard)}
+  onCreate={(keyboard) => writer.addKeyboardToMsg(step, keyboard)}
 />
 <StepTriggerEditorModal
   state={modals.trigger}
-  onCreate={(value) => scWriter.addTramsitionTriggerToMsg(step, value)}
+  onCreate={(value) => writer.addTramsitionTriggerToMsg(step, value)}
 />
 
 <style>
   .step {
     display: grid;
     grid-template-columns: 50px 1fr;
+    grid-auto-rows: auto;
     border-left: 1px dashed #4d4d4d;
     margin-top: 10px;
   }
@@ -114,5 +142,7 @@
 
   .step-message__title {
     font-weight: 600;
+    padding-top: 20px;
+    padding-bottom: 20px;
   }
 </style>

@@ -1,7 +1,7 @@
 <script>
   import MainLayout from "../layouts/MainLayout.svelte";
   import User from "../components/User.svelte";
-  import api from "../../../api/index.js";
+  import api from "../../../api.js";
 
   let users = [];
   (async () => {

@@ -3,15 +3,39 @@ import bot from "./bot.impl.js";
 import scheduler from "../scheduler/scheduler.impl.js";
 import dataBase from "../database/db.impl.js";
 import { commandHandlers } from "../constants/commands.js";
-import { getChatId, callIfAvailable } from "../utils.js";
-import { DATA_BASES, SETTINGS_MODELS_ENUM } from "../constants.js";
+import { getChatId, callIfAvailable, timeToMs } from "../utils.js";
+import {
+  DATA_BASES,
+  SETTINGS_MODELS_ENUM,
+  DEFAULT_SETTING_MODELS,
+} from "../constants.js";
 
 const settingsDB = dataBase.connect(DATA_BASES.SETTINGS);
 
 (async () => {
-  await appState.init();
+  for (const entity of DEFAULT_SETTING_MODELS) {
+    await settingsDB.create(entity);
+  }
 
   const { list: aliases } = await settingsDB.one(SETTINGS_MODELS_ENUM.ALIASES);
+  const { list: scenario } = await settingsDB.one(
+    SETTINGS_MODELS_ENUM.SCENARIO
+  );
+  let { list: remindersList } = await settingsDB.one(
+    SETTINGS_MODELS_ENUM.REMINDERS
+  );
+
+  remindersList = remindersList.map((group) => {
+    group.reminders = group.reminders.map((item) => ({
+      delay: timeToMs(item.delay, item.unit.value),
+      message: item.message,
+      keyboard: item.keyboard,
+    }));
+    return group;
+  });
+
+  await appState.init(scenario);
+
   bot.setTextCmdAliases(aliases);
 
   // обычные сообщения
@@ -97,10 +121,10 @@ const settingsDB = dataBase.connect(DATA_BASES.SETTINGS);
       "text",
       id,
       reminder.message,
-      reminder.buttons
+      reminder.keyboard
         ? {
             reply_markup: {
-              keyboard: reminder.buttons,
+              keyboard: reminder.keyboard,
               one_time_keyboard: true,
               resize_keyboard: true,
             },
@@ -111,7 +135,8 @@ const settingsDB = dataBase.connect(DATA_BASES.SETTINGS);
 
   // смена сцены
   appState.on("next_scene", async ({ scene, chat_id }) => {
-    scheduler.plans(chat_id, scene.reminders);
+    const reminders = remindersList.find((elem) => elem.id === scene.reminders);
+    scheduler.plans(chat_id, reminders);
     appState.saveSceneDuration(chat_id);
 
     if (scene.is_last) {
