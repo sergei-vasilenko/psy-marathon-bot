@@ -26,7 +26,7 @@ class SceneManager {
   }
 
   getFirstStep() {
-    return this.#scenario[0].steps[0];
+    return this.#scenario[0]?.steps[0];
   }
 
   getNextStep({ scene, step }) {

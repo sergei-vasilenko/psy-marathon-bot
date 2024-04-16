@@ -63,13 +63,12 @@ class Sessions {
 
   isAuth(req) {
     const id = this.extractAuthId(req);
-    console.log({ id, state: this.#state });
     return this.#state.has(id);
   }
 }
 
-const sessionsDB = new PouchDB(DATA_BASES.SESSIONS);
+const sessionsDB = new PouchDB(`app_storages/${DATA_BASES.SESSIONS}`);
 
-const sessions = new Sessions(sessionsDB, { lifetime: "1h" });
+const sessions = new Sessions(sessionsDB, { lifetime: "1m" });
 
 export default sessions;

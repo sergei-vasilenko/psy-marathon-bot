@@ -1,42 +1,42 @@
 import path from "path";
-// import { config } from "dotenv";
+import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { PROJECT_NAME } from "./constants.js";
 
-// export const getEnvKey = (key) => {
-//   const { error, parsed } = config();
-//   if (error || !parsed) {
-//     return new Error("[ConfigService]: Check your file .env");
-//   }
-
-//   if (Array.isArray(key)) {
-//     return key.reduce((result, keyName) => {
-//       result[keyName] =
-//         parsed[keyName] || new Error("[ConfigService]: No specified key");
-//       return result;
-//     }, {});
-//   }
-//   const res = parsed[key];
-//   if (!res) {
-//     return new Error("[ConfigService]: No specified key");
-//   }
-//   return res;
-// };
-
 export const getEnvKey = (key) => {
+  const { error, parsed } = config();
+  if (error || !parsed) {
+    return new Error("[ConfigService]: Check your file .env");
+  }
+
   if (Array.isArray(key)) {
     return key.reduce((result, keyName) => {
       result[keyName] =
-        process.env[keyName] || new Error("[ConfigService]: No specified key");
+        parsed[keyName] || new Error("[ConfigService]: No specified key");
       return result;
     }, {});
   }
-  const res = process.env[key];
+  const res = parsed[key];
   if (!res) {
     return new Error("[ConfigService]: No specified key");
   }
   return res;
 };
+
+// export const getEnvKey = (key) => {
+//   if (Array.isArray(key)) {
+//     return key.reduce((result, keyName) => {
+//       result[keyName] =
+//         process.env[keyName] || new Error("[ConfigService]: No specified key");
+//       return result;
+//     }, {});
+//   }
+//   const res = process.env[key];
+//   if (!res) {
+//     return new Error("[ConfigService]: No specified key");
+//   }
+//   return res;
+// };
 
 export const pipe =
   (...fns) =>
