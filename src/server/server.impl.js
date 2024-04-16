@@ -1,8 +1,10 @@
+import https from "https";
 import express from "express";
+import fs from "fs";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import bot from "../bot/bot.impl.js";
-import { getEnvKey, paths } from "../utils.js";
+import { getEnvKey, paths, getConfigKey } from "../utils.js";
 import adminPathHandler from "../admin/adminPathHandler.js";
 import authEndpoint from "./api/groups/auth.endpoint.js";
 import usersEndpoint from "./api/groups/users.endpoint.js";
@@ -10,8 +12,14 @@ import settingsEndpoint from "./api/groups/settings.endpoint.js";
 import filesEndpoint from "./api/groups/files.endpoint.js";
 
 const { join, __root } = paths(import.meta.url);
-const server = express();
 const { TOKEN, PORT } = getEnvKey(["TOKEN", "PORT"]);
+
+const options = {
+  key: fs.readFileSync("./certificate/key.pem"),
+  cert: fs.readFileSync("./certificate/cert.pem"),
+  passphrase: getConfigKey("CERT_PHRASE"),
+};
+const server = https.createServer(options, express());
 
 const publicPath = express.static(join(__root, "public"));
 server.use(cookieParser());
@@ -34,9 +42,3 @@ server.post(`/bot${TOKEN}`, (req, res) => {
 server.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
-
-// const options = {
-//   key: fs.readFileSync("./certificate/key.pem"),
-//   cert: fs.readFileSync("./certificate/cert.pem"),
-//   passphrase: getConfigKey("CERT_PHRASE"),
-// };
