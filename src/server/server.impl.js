@@ -19,7 +19,7 @@ const options = {
   cert: fs.readFileSync("./certificate/cert.pem"),
   passphrase: getConfigKey("CERT_PHRASE"),
 };
-const server = https.createServer(options, express());
+const server = express();
 
 const publicPath = express.static(join(__root, "public"));
 server.use(cookieParser());
@@ -39,6 +39,8 @@ server.post(`/bot${TOKEN}`, (req, res) => {
   res.send();
 });
 
-server.listen(PORT, () => {
+const app = https.createServer(options, server);
+
+app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
