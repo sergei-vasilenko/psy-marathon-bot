@@ -30,7 +30,7 @@
     let data = null;
     const trigger = triggers.find((elem) => elem.id === selected);
     if (trigger) {
-      data = trigger.handler;
+      data = trigger;
     }
     onCreate(data);
     state.isOpen = false;

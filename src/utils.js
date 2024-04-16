@@ -1,5 +1,4 @@
 import path from "path";
-import fs from "fs";
 import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { PROJECT_NAME } from "./constants.js";
@@ -157,36 +156,6 @@ export function paths(url) {
     __dirname,
   };
 }
-
-export const clearFolder = (path) => {
-  fs.readdir(path, (err, files) => {
-    if (err) {
-      console.error("Ошибка чтения каталога:", err);
-      return;
-    }
-
-    for (const file of files) {
-      const filePath = path.join(path, file);
-
-      fs.stat(filePath, (err, stat) => {
-        if (err) {
-          console.error("Ошибка получения информации о файле:", err);
-          return;
-        }
-
-        if (stat.isFile()) {
-          fs.unlink(filePath, (err) => {
-            if (err) {
-              console.error("Ошибка удаления файла:", err);
-            } else {
-              console.log(`Файл ${filePath} успешно удален`);
-            }
-          });
-        }
-      });
-    }
-  });
-};
 
 export const timeToMs = (time, unit) => {
   const unitsCoef = {

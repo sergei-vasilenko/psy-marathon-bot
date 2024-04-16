@@ -35,6 +35,7 @@
   }
 
   .content {
+    position: relative;
     padding: 20px;
   }
 

@@ -23,7 +23,7 @@ class ScenarioWriter {
       });
       return scene;
     });
-    this.#onUpdate();
+    this.#onUpdate(true);
   }
 
   addScene() {
@@ -42,7 +42,8 @@ class ScenarioWriter {
   }
 
   subscribe(callback) {
-    this.#onUpdate = () => callback(this.#state);
+    this.#onUpdate = (isInit) =>
+      callback({ state: this.#state, couse: isInit ? "init" : "update" });
   }
 
   removeScene(id) {
@@ -64,7 +65,9 @@ class ScenarioWriter {
   }
 
   removeStep(step) {
-    const stepIndex = step._parent.steps.findIndex(step.id);
+    const stepIndex = step._parent.steps.findIndex(
+      (item) => step.id === item.id
+    );
     step._parent.steps.splice(stepIndex, 1);
     this.#onUpdate();
   }
@@ -79,7 +82,7 @@ class ScenarioWriter {
     this.#onUpdate();
   }
 
-  addTramsitionTriggerToMsg(step, value) {
+  addTransitionTriggerToMsg(step, value) {
     step.transitionTrigger = value;
     this.#onUpdate();
   }
@@ -104,6 +107,11 @@ class ScenarioWriter {
       (elem) => elem.id === part.id
     );
     part._parent.message.splice(partIndex, 1);
+    this.#onUpdate();
+  }
+
+  removeScenario() {
+    this.#state = [];
     this.#onUpdate();
   }
 }

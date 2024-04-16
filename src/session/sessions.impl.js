@@ -21,8 +21,8 @@ class Sessions {
     this.#lifetime = parseInt(value) * (odds[unit] || 0);
   }
 
-  restore() {
-    this.#db
+  async restore() {
+    await this.#db
       .allDocs({
         include_docs: true,
       })
@@ -36,7 +36,8 @@ class Sessions {
             this.#state.add(session._id);
           }
         });
-      });
+      })
+      .catch((err) => console.error(err));
   }
 
   extractAuthId(req) {
@@ -47,7 +48,7 @@ class Sessions {
     const id = Date.now().toString();
     res.cookie(this.#cookieKey, id, { httpOnly: true, maxAge: this.#lifetime });
     this.#state.add(id);
-    await this.#db.put({ _id: id, ttl: this.#lifetime });
+    await this.#db.put({ _id: id, ttl: this.#lifetime + Date.now() });
   }
 
   end(req, res) {
@@ -62,6 +63,7 @@ class Sessions {
 
   isAuth(req) {
     const id = this.extractAuthId(req);
+    console.log({ id, state: this.#state });
     return this.#state.has(id);
   }
 }

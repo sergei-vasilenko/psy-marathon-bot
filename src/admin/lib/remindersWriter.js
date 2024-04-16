@@ -8,6 +8,13 @@ class RemindersWriter {
 
   init(groups) {
     this.#groups = [...groups, ...this.#groups].sort((a, b) => a.id - b.id);
+    this.#groups = this.#groups.map((group) => {
+      group.reminders.map((reminder) => {
+        reminder._parent = group;
+        return reminder;
+      });
+      return group;
+    });
     this.#onUpdate();
   }
 

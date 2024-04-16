@@ -12,29 +12,34 @@
 
   let scenario = [];
   let remindersList = [];
+  let isChanged = false;
 
   let loaded = 0;
   let currentFile = "";
-  $: loadingSize = $filesToSend.reduce((sum, elem) => {
-    console.log({ elem });
-    return elem.size + sum;
-  }, 0);
+  $: loadingSize = $filesToSend.reduce((sum, elem) => elem.size + sum, 0);
   $: loadedPercent = loadingSize > 0 ? (loaded / loadingSize) * 100 : 0;
-  $: console.log({ loadingSize });
+
   const scWriter = new ScenarioWriter();
 
-  scWriter.subscribe((state) => {
+  scWriter.subscribe(({ state, couse }) => {
     scenario = state;
+    if (couse === "init") return;
+    isChanged = true;
   });
 
   const save = async () => {
     await api.scenario.set(
       removeFields(scenario, (field) => field.startsWith("_"))
     );
-    const deleteFiles = $filesToDelete.map(
-      (filename) => async () => await api.files.delete(filename)
+    const deleteFiles = $filesToDelete.map((filename) =>
+      api.files.delete(filename)
     );
-    await Promise.all(deleteFiles);
+
+    try {
+      await Promise.all(deleteFiles);
+    } catch (err) {
+      console.error(err);
+    }
 
     for (const { upload, size, filename } of $filesToSend) {
       try {
@@ -43,16 +48,33 @@
         loaded += size;
       } catch (err) {
         console.error(err);
-      } finally {
-        loadingSize = 0;
-        loaded = 0;
-        currentFile = "";
       }
     }
+    loadingSize = 0;
+    loaded = 0;
+    currentFile = "";
+    isChanged = false;
   };
 
   const remove = async () => {
     await api.scenario.delete();
+    const deleteFiles = scenario
+      .reduce((result, scene) => {
+        let sceneFiles = [];
+        scene.steps.forEach((step) => {
+          const files = step.message.map((part) => part.filename);
+          sceneFiles = [...sceneFiles, ...files];
+        });
+        return [...result, ...sceneFiles];
+      })
+      .map((filename) => api.files.delete(filename));
+
+    try {
+      await Promise.all(deleteFiles);
+      scWriter.removeScenario();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   onMount(async () => {
@@ -63,13 +85,14 @@
 </script>
 
 <MainLayout h1="Сценарий">
-  <div class="progress-bar" class:progress-bar--hidden={loadingSize === 0}>
+  <div class="action-bar" class:action-bar--hidden={!isChanged}>
     <LoadingProgress
       total={loadingSize}
       fileInProcess={currentFile}
       {loaded}
       {loadedPercent}
     />
+    <Button theme="add" onClick={save}>Сохранить</Button>
   </div>
   <div class="scenario">
     <div class="header">
@@ -94,27 +117,32 @@
     {/if}
   </div>
   <Button onClick={() => scWriter.addScene()}>Добавить сцену</Button>
-  <Button theme="add" onClick={save}>Сохранить</Button>
   {#if scenario.length}<Button theme="delete" onClick={remove}
       >Удалить сценарий</Button
     >{/if}
 </MainLayout>
 
 <style>
-  .progress-bar {
+  .action-bar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     position: fixed;
     top: 0;
+    left: 260px;
+    right: 0;
     height: 70px;
-    width: 100%;
     z-index: 5;
     background-color: #fcfcfc;
     padding: 12px;
+    transform: translateY(0);
+    transition: all 500ms;
   }
 
-  .progress-bar--hidden {
+  .action-bar--hidden {
     display: none;
+    transform: translateY(100%);
+    transition: all 500ms;
   }
 
   .scenario {

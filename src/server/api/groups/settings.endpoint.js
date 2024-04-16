@@ -3,7 +3,6 @@ import dataBase from "../../../database/db.impl.js";
 import bot from "../../../bot/bot.impl.js";
 import scenes from "../../../scenes/scenemanager.impl.js";
 import { DATA_BASES } from "../../../constants.js";
-import { clearFolder, paths } from "../../../utils.js";
 
 const router = express.Router();
 const settingsDB = dataBase.connect(DATA_BASES.SETTINGS);
@@ -22,9 +21,6 @@ router.post("/scenario", (req, res) => {
 
 router.delete("/scenario", (req, res) => {
   settingsDB.set({ _id: "scenario", list: [] });
-  const { __root, join } = paths(import.meta.url);
-  const mediaPath = join(__root, "public", "media");
-  clearFolder(mediaPath);
   res.status(204).end();
 });
 

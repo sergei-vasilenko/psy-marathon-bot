@@ -6,7 +6,8 @@ import sessions from "../../../session/sessions.impl.js";
 const router = express.Router();
 const { LOGIN, PASSWORD } = getEnvKey(["LOGIN", "PASSWORD"]);
 
-router.get("/status", (req, res) => {
+router.get("/status", async (req, res) => {
+  await sessions.restore();
   const is_auth = sessions.isAuth(req);
   res.status(200).json({ is_auth });
 });

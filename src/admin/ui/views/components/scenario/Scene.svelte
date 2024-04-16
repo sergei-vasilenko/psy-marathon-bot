@@ -9,11 +9,14 @@
   export let number;
   export let writer;
 
+  let isHoveredRemoveScene = false;
+  let isHoveredAddReminders = false;
+
   const state = { isOpen: false, title: "Выберите напоминание" };
   const onCreate = (id) => writer.addRemindersId(scene, id);
   const removeScene = () => {
     const deleteFiles = scene.steps.reduce((filenames, step) => {
-      const files = step.message.map(part.filename);
+      const files = step.message.map((part) => part.filename);
       filenames = [...filenames, ...files];
       return filenames;
     }, []);
@@ -25,10 +28,13 @@
   ) || { title: "не выбрано" };
 </script>
 
-<div class="scene">
+<div class="scene" class:scene--hover={isHoveredRemoveScene}>
   <div class="scene__number">{number}</div>
   <div class="scene__content">
-    <div class="scene__reminders">
+    <div
+      class="scene__reminders"
+      class:scene__reminders--hover={isHoveredAddReminders}
+    >
       <span class="weight600">Напоминание:</span>
       {currentReminders.title}
     </div>
@@ -42,8 +48,20 @@
     {/if}
   </div>
   <div class="scene__actions">
-    <Button theme="delete" onClick={removeScene}>Удалить сцену</Button>
-    <Button theme="add" onClick={() => (state.isOpen = true)}>
+    <Button
+      theme="delete"
+      onClick={removeScene}
+      on:hovered={({ detail }) => {
+        isHoveredRemoveScene = detail.state;
+      }}>Удалить сцену</Button
+    >
+    <Button
+      theme="add"
+      onClick={() => (state.isOpen = true)}
+      on:hovered={({ detail }) => {
+        isHoveredAddReminders = detail.state;
+      }}
+    >
       Добавить напоминания
     </Button>
     <Button theme="add" onClick={() => writer.addStep(scene.id)}>
@@ -63,6 +81,22 @@
     display: grid;
     grid-template-columns: 50px 1fr 160px;
     border-bottom: 1px solid #202020;
+    transition: all 300ms;
+  }
+
+  .scene--hover {
+    background-color: #ffc9c0;
+    transition: all 300ms;
+  }
+
+  .scene__reminders {
+    width: max-content;
+    padding: 10px;
+    transition: all 300ms;
+  }
+  .scene__reminders--hover {
+    background-color: #e0ffc3;
+    transition: all 300ms;
   }
 
   .scene__number {
@@ -86,8 +120,7 @@
   .scene__actions {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 6px;
+    row-gap: 6px;
     padding: 6px;
   }
 </style>

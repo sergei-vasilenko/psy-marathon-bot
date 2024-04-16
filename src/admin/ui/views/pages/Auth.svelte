@@ -1,6 +1,6 @@
 <script>
   import { navigate } from "svelte-routing";
-  import { isAuth } from "../../store";
+  import { isAuth } from "../../store.js";
   import api from "../../../api.js";
   import { ADMIN_PATH } from "../../../../constants.js";
   const user = { login: "", password: "" };
@@ -12,8 +12,9 @@
     try {
       await api.auth.login(user);
       isAuth.set(true);
-      navigate(`${ADMIN_PATH}/`);
+      navigate(`${ADMIN_PATH}/`, { replace: true });
     } catch (err) {
+      console.log("ERR", err.message);
       isAuth.set(false);
       if (err.message.login) {
         error.login = err.message.login;
@@ -23,6 +24,8 @@
       }
     }
   };
+
+  $: if ($isAuth) navigate(`${ADMIN_PATH}/`, { replace: true });
 </script>
 
 <section>

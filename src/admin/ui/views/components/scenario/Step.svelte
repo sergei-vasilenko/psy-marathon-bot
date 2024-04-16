@@ -18,6 +18,8 @@
     trigger: { isOpen: false, title: "" },
   };
 
+  let isHoveredRemoveStep = false;
+
   const update = ({ id, order, data }) =>
     writer.updPart(step, id, (part) => {
       if (order !== undefined) {
@@ -43,7 +45,7 @@
 
   const removeStep = async () => {
     try {
-      const deleteFiles = step.message.map(part.filename);
+      const deleteFiles = step.message.map((part) => part.filename);
       filesToDelete.update((files) => [...files, ...deleteFiles]);
       writer.removeStep(step);
     } catch (err) {
@@ -62,10 +64,10 @@
   };
 </script>
 
-<div class="step">
+<div class="step" class:step--hover={isHoveredRemoveStep}>
   <div class="step__number">{number}</div>
   <div class="step-message">
-    <div class="step-message__title">Сообщение:</div>
+    <div class="step-message__title weight600">Сообщение:</div>
     {#if step.message.length > 0}
       {#each step.message as part, partIdx (part.id)}
         <MessagePart
@@ -79,36 +81,48 @@
       <EmptyState />
     {/if}
     <MessageKeyboard keyboard={step.keyboard} />
-    <Button
-      theme="add"
-      onClick={() => {
-        modals.message.isOpen = true;
-        modals.message.title = "Редактор сообщения";
-      }}
-    >
-      Добавить сообщение
-    </Button>
-    <Button
-      theme="add"
-      onClick={() => {
-        modals.keyboard.isOpen = true;
-        modals.keyboard.title = "Редактор клавиатуры";
-      }}
-    >
-      {step.keyboard.length
-        ? "Редактировать клавиатуру"
-        : "Добавить клавиатуру"}
-    </Button>
-    <Button
-      theme="add"
-      onClick={() => {
-        modals.trigger.isOpen = true;
-        modals.trigger.title = "Редактор триггера";
-      }}
-    >
-      {step.transitionTrigger ? "Редактировать триггер" : "Добавить триггер"}
-    </Button>
-    <Button theme="delete" onClick={removeStep}>Удалить шаг</Button>
+    <div class="step__trigger">
+      <span class="weight600">Триггер перехода:</span>
+      {step.transitionTrigger ? step.transitionTrigger.label : "не добавлен"}
+    </div>
+    <div class="step__actions">
+      <Button
+        theme="add"
+        onClick={() => {
+          modals.message.isOpen = true;
+          modals.message.title = "Редактор сообщения";
+        }}
+      >
+        Добавить сообщение
+      </Button>
+      <Button
+        theme="add"
+        onClick={() => {
+          modals.keyboard.isOpen = true;
+          modals.keyboard.title = "Редактор клавиатуры";
+        }}
+      >
+        {step.keyboard.length
+          ? "Редактировать клавиатуру"
+          : "Добавить клавиатуру"}
+      </Button>
+      <Button
+        theme="add"
+        onClick={() => {
+          modals.trigger.isOpen = true;
+          modals.trigger.title = "Редактор триггера";
+        }}
+      >
+        {step.transitionTrigger ? "Редактировать триггер" : "Добавить триггер"}
+      </Button>
+      <Button
+        theme="delete"
+        onClick={removeStep}
+        on:hovered={({ detail }) => {
+          isHoveredRemoveStep = detail.state;
+        }}>Удалить шаг</Button
+      >
+    </div>
   </div>
 </div>
 <StepMessageEditorModal state={modals.message} onCreate={addMessage} />
@@ -118,7 +132,7 @@
 />
 <StepTriggerEditorModal
   state={modals.trigger}
-  onCreate={(value) => writer.addTramsitionTriggerToMsg(step, value)}
+  onCreate={(value) => writer.addTransitionTriggerToMsg(step, value)}
 />
 
 <style>
@@ -128,6 +142,12 @@
     grid-auto-rows: auto;
     border-left: 1px dashed #4d4d4d;
     margin-top: 10px;
+    transition: all 300ms;
+  }
+
+  .step--hover {
+    background-color: #ffc9c0;
+    transition: all 300ms;
   }
 
   .step:not(:last-child) {
@@ -141,8 +161,20 @@
   }
 
   .step-message__title {
-    font-weight: 600;
     padding-top: 20px;
     padding-bottom: 20px;
+  }
+
+  .weight600 {
+    font-weight: 600;
+  }
+
+  .step__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 10px;
+    margin-top: 20px;
+    margin-bottom: 20px;
   }
 </style>

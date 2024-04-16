@@ -1,8 +1,13 @@
+<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <script>
+  import { createEventDispatcher } from "svelte";
+
   export let loading = false;
   export let theme = "default";
   export let disabled = false;
   export let onClick = () => {};
+
+  const dispatch = createEventDispatcher();
 
   const getTheme = () => {
     let classStr = "";
@@ -19,7 +24,16 @@
   };
 </script>
 
-<button {disabled} class={"button" + getTheme()} on:click={onClick}>
+<button
+  {disabled}
+  class={"button" + getTheme()}
+  on:click={() => {
+    if (loading) return;
+    onClick();
+  }}
+  on:mouseover={() => dispatch("hovered", { state: true })}
+  on:mouseleave={() => dispatch("hovered", { state: false })}
+>
   {#if loading}
     Идет загрузка...
   {:else}

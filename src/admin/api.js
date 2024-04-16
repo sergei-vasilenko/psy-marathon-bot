@@ -26,8 +26,8 @@ const request = {
     result = result ? JSON.parse(result) : {};
 
     if (response.status >= 400) {
-      const error = new Error();
-      error.message = result;
+      const error = new Error(result);
+      error.message = result.message;
       error.code = response.status;
       throw error;
     }

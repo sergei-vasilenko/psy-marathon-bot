@@ -10,9 +10,7 @@
   useLocation().subscribe(({ pathname }) => {
     currentPath = pathname.replace(ADMIN_PATH, "");
     if (currentPath !== "/auth" && !$isAuth) {
-      console.log("REDIRECT");
       navigate(`${ADMIN_PATH}/auth`, { replace: true });
-      console.log("AFTER REDIRECT");
       return;
     }
     const route = routes.find((elem) => elem.path === currentPath);
