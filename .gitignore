@@ -1,6 +1,6 @@
 /node_modules
 /logs
-/app_storage
+/app_storage/
 /public/media
 /public/build
 .env
