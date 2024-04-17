@@ -23,7 +23,12 @@ const request = {
     });
 
     let result = await response.text();
-    result = result ? JSON.parse(result) : {};
+
+    try {
+      result = result ? JSON.parse(result) : {};
+    } catch (err) {
+      console.error(err);
+    }
 
     if (response.status >= 400) {
       const error = new Error(result);

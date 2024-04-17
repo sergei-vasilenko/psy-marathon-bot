@@ -31,10 +31,7 @@ server.use(authEndpoint.prefix, authEndpoint.router);
 server.use(usersEndpoint.prefix, usersEndpoint.router);
 server.use(settingsEndpoint.prefix, settingsEndpoint.router);
 server.use(filesEndpoint.prefix, filesEndpoint.router);
-server.get("/admin/*", (...args) => {
-  console.log("ADMIN", ...args);
-  return adminPathHandler(...args);
-});
+server.get("/admin/*", adminPathHandler);
 
 server.post(`/bot${TOKEN}`, (req, res) => {
   const update = req.body;
