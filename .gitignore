@@ -1,4 +1,6 @@
 /node_modules
+/app_storage/*
+!/app_storage/README.md
 /logs
 /public/media
 /public/build
