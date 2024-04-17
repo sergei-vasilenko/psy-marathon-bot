@@ -30,8 +30,8 @@ router.post("/login", async (req, res) => {
   res.status(200).end();
 });
 
-router.post("/logout", (req, res) => {
-  sessions.end(req, res);
+router.post("/logout", async (req, res) => {
+  await sessions.end(req, res);
   res.status(200).end();
 });
 
