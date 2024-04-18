@@ -32,6 +32,9 @@ server.use(usersEndpoint.prefix, usersEndpoint.router);
 server.use(settingsEndpoint.prefix, settingsEndpoint.router);
 server.use(filesEndpoint.prefix, filesEndpoint.router);
 server.get("/admin/*", adminPathHandler);
+server.get("/", (req, res) => {
+  res.send("Welcome to the homepage!");
+});
 
 server.post(`/bot${TOKEN}`, (req, res) => {
   const update = req.body;
