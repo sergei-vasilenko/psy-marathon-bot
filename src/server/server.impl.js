@@ -10,6 +10,7 @@ import authEndpoint from "./api/groups/auth.endpoint.js";
 import usersEndpoint from "./api/groups/users.endpoint.js";
 import settingsEndpoint from "./api/groups/settings.endpoint.js";
 import filesEndpoint from "./api/groups/files.endpoint.js";
+import healthEndpoint from "./api/groups/health.endpoint.js";
 
 const { join, __root } = paths(import.meta.url);
 const { TOKEN, PORT } = getEnvKey(["TOKEN", "PORT"]);
@@ -31,6 +32,7 @@ server.use(authEndpoint.prefix, authEndpoint.router);
 server.use(usersEndpoint.prefix, usersEndpoint.router);
 server.use(settingsEndpoint.prefix, settingsEndpoint.router);
 server.use(filesEndpoint.prefix, filesEndpoint.router);
+server.use(healthEndpoint.prefix, healthEndpoint.router);
 server.get("/admin/*", adminPathHandler);
 server.get("/", (req, res) => {
   res.send("Welcome to the homepage!");
