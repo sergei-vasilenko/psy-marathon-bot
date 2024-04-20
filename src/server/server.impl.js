@@ -49,3 +49,7 @@ const app = https.createServer(options, server);
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
+
+app.listen(443, () => {
+  console.log(`Server is listening on port 443`);
+});
