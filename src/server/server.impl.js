@@ -50,7 +50,7 @@ botApp.listen(PORT, () => {
   console.log(`Bot is listening on port ${PORT}`);
 });
 
-const adminPanelApp = https.createServer(options, botServer);
+const adminPanelApp = https.createServer(options, adminPanel);
 adminPanelApp.listen(443, () => {
   console.log(`Server is listening on port 443`);
 });
