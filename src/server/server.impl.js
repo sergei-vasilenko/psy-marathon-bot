@@ -20,37 +20,32 @@ const options = {
   cert: fs.readFileSync("./certificate/cert.pem"),
   passphrase: getConfigKey("CERT_PHRASE"),
 };
-const botServer = express();
+const server = express();
 
-botServer.post(`/bot${TOKEN}`, (req, res) => {
+const publicPath = express.static(join(__root, "public"));
+server.use(cookieParser());
+server.use(bodyParser.json({ limit: "10mb" }));
+server.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
+
+server.use("/admin", publicPath);
+server.use(authEndpoint.prefix, authEndpoint.router);
+server.use(usersEndpoint.prefix, usersEndpoint.router);
+server.use(settingsEndpoint.prefix, settingsEndpoint.router);
+server.use(filesEndpoint.prefix, filesEndpoint.router);
+server.use(healthEndpoint.prefix, healthEndpoint.router);
+server.get("/admin/*", adminPathHandler);
+server.get("/", (req, res) => {
+  res.send("Welcome to the homepage!");
+});
+
+server.post(`/bot${TOKEN}`, (req, res) => {
   const update = req.body;
   bot.processUpdate(update);
   res.send();
 });
 
-const botApp = https.createServer(options, botServer);
-botApp.listen(PORT, () => {
-  console.log(`Bot is listening on port ${PORT}`);
-});
+const app = https.createServer(options, server);
 
-const adminPanel = express();
-const publicPath = express.static(join(__root, "public"));
-adminPanel.use(cookieParser());
-adminPanel.use(bodyParser.json({ limit: "10mb" }));
-adminPanel.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
-
-adminPanel.use("/admin", publicPath);
-adminPanel.use(authEndpoint.prefix, authEndpoint.router);
-adminPanel.use(usersEndpoint.prefix, usersEndpoint.router);
-adminPanel.use(settingsEndpoint.prefix, settingsEndpoint.router);
-adminPanel.use(filesEndpoint.prefix, filesEndpoint.router);
-adminPanel.use(healthEndpoint.prefix, healthEndpoint.router);
-adminPanel.get("/admin/*", adminPathHandler);
-adminPanel.get("/", (req, res) => {
-  res.send("Welcome to the homepage!");
-});
-
-const adminPanelApp = https.createServer(options, adminPanel);
-adminPanelApp.listen(443, () => {
-  console.log(`Server is listening on port 443`);
+app.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
 });
