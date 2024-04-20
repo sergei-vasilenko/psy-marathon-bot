@@ -21,8 +21,19 @@ const options = {
   passphrase: getConfigKey("CERT_PHRASE"),
 };
 const botServer = express();
-const adminPanel = express();
 
+botServer.post(`/bot${TOKEN}`, (req, res) => {
+  const update = req.body;
+  bot.processUpdate(update);
+  res.send();
+});
+
+const botApp = https.createServer(options, botServer);
+botApp.listen(PORT, () => {
+  console.log(`Bot is listening on port ${PORT}`);
+});
+
+const adminPanel = express();
 const publicPath = express.static(join(__root, "public"));
 adminPanel.use(cookieParser());
 adminPanel.use(bodyParser.json({ limit: "10mb" }));
@@ -37,17 +48,6 @@ adminPanel.use(healthEndpoint.prefix, healthEndpoint.router);
 adminPanel.get("/admin/*", adminPathHandler);
 adminPanel.get("/", (req, res) => {
   res.send("Welcome to the homepage!");
-});
-
-botServer.post(`/bot${TOKEN}`, (req, res) => {
-  const update = req.body;
-  bot.processUpdate(update);
-  res.send();
-});
-
-const botApp = https.createServer(options, botServer);
-botApp.listen(PORT, () => {
-  console.log(`Bot is listening on port ${PORT}`);
 });
 
 const adminPanelApp = https.createServer(options, adminPanel);
