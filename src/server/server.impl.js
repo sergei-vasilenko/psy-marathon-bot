@@ -40,6 +40,7 @@ server.get("/", (req, res) => {
 
 server.post(`/bot${TOKEN}`, (req, res) => {
   const update = req.body;
+  console.log({ update });
   bot.processUpdate(update);
   res.send();
 });
